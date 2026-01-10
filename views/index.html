@@ -1,0 +1,135 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="/assets/bootstrap-5.2.3-dist/bootstrap-5.2.3-dist/css/bootstrap.min.css">
+        <script src="/assets/bootstrap-5.2.3-dist/bootstrap-5.2.3-dist/js/bootstrap.min.js"></script>
+        <script src="/assets/jquery/jquery-3.7.1.min.js"></script>
+    </head>
+    <body class="bg-light">
+
+<div class="container py-5">
+
+  <h1 class="mb-4 text-center">IoT Based Room Temperature Monitoring System with Automated Fan Opening and Smart Food Dispensing for Pets and SMS Notification.</h1>
+
+  <div class="row g-4">
+
+    <!-- Temperature Card -->
+    <div class="col-md-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">Input Temperature to open the fan</h5>
+        </div>
+        <div class="card-body">
+          <form id="tempForm">
+            <div class="mb-3">
+              <label class="form-label">Temperature (°C)</label>
+              <input type="number" class="form-control" name="temperature" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Save Temperature</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pet Feeding Time Card -->
+    <div class="col-md-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0">Pet Feeding Times</h5>
+        </div>
+        <div class="card-body">
+          <form id="feedingForm">
+            <div id="feedingTimes">
+              <div class="mb-3 feeding-item">
+                <label class="form-label">Feeding Time</label>
+                <input type="time" class="form-control" name="feeding_time[]" required>
+              </div>
+            </div>
+
+            <button type="button" class="btn btn-outline-success w-100 mb-2" id="addFeedingTime">
+              + Add Another Time
+            </button>
+
+            <button type="submit" class="btn btn-success w-100">Save Feeding Times</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Numbers Card -->
+    <div class="col-md-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-warning">
+          <h5 class="mb-0">Mobile Numbers for SMS Notification</h5>
+        </div>
+        <div class="card-body">
+          <form id="mobileForm">
+            <div id="mobileNumbers">
+              <div class="mb-3 mobile-item">
+                <label class="form-label">Mobile Number</label>
+                <input type="text" class="form-control" name="mobile_number[]" placeholder="+639XXXXXXXXX" required>
+              </div>
+            </div>
+
+            <button type="button" class="btn btn-outline-warning w-100 mb-2" id="addMobileNumber">
+              + Add Another Number
+            </button>
+
+            <button type="submit" class="btn btn-warning w-100">Save Numbers</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+    // Add feeding time input
+    $('#addFeedingTime').on('click', function () {
+        $('#feedingTimes').append(`
+        <div class="mb-3 feeding-item">
+            <label class="form-label">Feeding Time</label>
+            <input type="time" class="form-control" name="feeding_time[]" required>
+        </div>
+        `);
+    });
+
+    // Add mobile number input
+    $('#addMobileNumber').on('click', function () {
+        $('#mobileNumbers').append(`
+        <div class="mb-3 mobile-item">
+            <label class="form-label">Mobile Number</label>
+            <input type="text" class="form-control" name="mobile_number[]" placeholder="+639XXXXXXXXX" required>
+        </div>
+        `);
+    });
+
+    // Form submit handlers (optional)
+    $('#tempForm').on('submit', function (e) {
+        e.preventDefault();
+        alert('Temperature saved');
+    });
+
+    $('#feedingForm').on('submit', function (e) {
+        e.preventDefault();
+        const feedingTimes = [];
+        $('#feedingForm [name="feeding_time[]"]').each(function () {
+            feedingTimes.push($(this).val());
+        });
+        console.log("feedingTimes>>>>", feedingTimes);
+        
+    });
+
+    $('#mobileForm').on('submit', function (e) {
+        e.preventDefault();
+        const mobileNumbers = [];
+        $('#mobileForm [name="mobile_number[]"]').each(function () {
+            mobileNumbers.push($(this).val());
+        });
+        console.log("Mobile numbers");
+        
+    });
+</script>
+
+</body>
+</html>
