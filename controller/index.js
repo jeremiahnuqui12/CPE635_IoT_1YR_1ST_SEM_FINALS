@@ -5,6 +5,7 @@ class IoTPetFeeder {
     }
     index(req, res) {
         res.render('index', { title: 'Dashboard' });
+        return;
     }
     async saveTemperature(req, res) {
         const { room_id, tempValue } = req.body;
@@ -33,10 +34,12 @@ class IoTPetFeeder {
         } catch (err) {
             res.status(500).json({ error: err.message });
         }
+        return;
     }
     async getCurrentRoomTemperature(req, res) {
         let result = await db.getLastRoomTemperature(1);
         res.status(200).json(result);
+        return;
     }
     async saveTemperatureSettings(req, res) {
         const { tempValue } = req.body;
@@ -67,13 +70,15 @@ class IoTPetFeeder {
     async getTemperatureConfig(req, res) {
         let result = await db.getTemperatureConfig(1);
         res.status(200).json(result);
+        return;
     } 
-    saveMobileNumber(req, res) {
-
-    }
+    // ================================================================
+    // ================================================================
+    // ================================================================
     async getFeedingTime(req, res) {
         let result = await db.getFeedingTime();
         res.status(200).json(result);
+        return;
     }
     async savePetFeedingTime(req, res) {
         const { feeding_times } = req.body;
@@ -123,6 +128,72 @@ class IoTPetFeeder {
             res.status(200).json({
                 status: "SUCCESS",
                 description: "Feeding has been removed"
+            });
+            return;
+        } catch (err) {
+            res.status(500).json({ 
+                status: "ERROR",
+                description: err.message
+            });
+            return;
+        }
+    }
+    // ================================================================
+    // ================================================================
+    // ================================================================
+    async getMobileNumber(req, res) {
+        let result = await db.getMobileNumber();
+        res.status(200).json(result);
+        return;
+    }
+    async saveMobileNumber(req, res) {
+        const { mobile_numbers } = req.body;
+        let mobile_number_list = JSON.parse(mobile_numbers);
+        if (!mobile_number_list || !Array.isArray(mobile_number_list)) {
+            res.status(400).json({ 
+                status: "ERROR",
+                description: "Mobile Number is required"
+            });
+            return;
+        }
+        try {
+            let db_payload = [];
+            mobile_number_list.map(x=>{
+                db_payload.push(
+                    [x]
+                );
+            });
+            // console.log(db_payload);
+            await db.removeMobileNumber()
+            await db.saveMobileNumber(db_payload);
+            res.status(200).json({
+                status: "SUCCESS",
+                description: "Mobile Number has been saved"
+            });
+            return;
+        } catch (err) {
+            res.status(500).json({ 
+                status: "ERROR",
+                description: err.message
+            });
+            return;
+        }
+    }
+    async removeMobileNumber(req,res) {
+        const { mobile_number_id } = req.body;
+        if (!mobile_number_id) {
+            res.status(400).json({ 
+                status: "ERROR",
+                description: "Mobile number id is required"
+            });
+            return;
+        }
+        try {
+            let db_payload = [];
+            await db.removeMobileNumberRecord(mobile_number_id)
+            res.status(200).json({
+                status: "SUCCESS",
+                description: "Mobile number has been removed"
             });
             return;
         } catch (err) {

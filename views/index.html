@@ -77,7 +77,7 @@
             <div id="mobileNumbers">
               <div class="mb-3 mobile-item">
                 <label class="form-label">Mobile Number</label>
-                <input type="text" class="form-control" name="mobile_number[]" placeholder="+639XXXXXXXXX" required>
+                <input type="text" class="form-control mobile-number-input" name="mobile_number[]" placeholder="+639XXXXXXXXX" required>
               </div>
             </div>
 
@@ -113,12 +113,27 @@
     // Add mobile number input
     $('#addMobileNumber').on('click', function () {
         $('#mobileNumbers').append(`
-        <div class="mb-3 mobile-item">
-            <label class="form-label">Mobile Number</label>
-            <input type="text" class="form-control" name="mobile_number[]" placeholder="+639XXXXXXXXX" required>
-        </div>
+          <div class="feeding-time-div">
+            <div class="mb-3 mobile-item">
+              <label class="form-label">Mobile Number</label>
+              <input type="text" class="form-control mobile-number-input" name="mobile_number[]" placeholder="+639XXXXXXXXX" required>
+            </div>
+            <div class="ms-2">
+                <button type="button" class="btn btn-sm btn-outline-danger">Remove</button>
+            </div>
+          </div>
         `);
     });
+    $(document.body).on('keyup', '.mobile-number-input',function () {
+      const value = $(this).val();
+
+      if (/^(09|\+639|639)\d{9}$/.test(value)) {
+        $(this).addClass('is-valid').removeClass('is-invalid');
+      } else {
+        $(this).addClass('is-invalid').removeClass('is-valid');
+      }
+    });
+
 
     // Form submit handlers (optional)
     $('#tempForm').on('submit', function (e) {
@@ -160,20 +175,37 @@
           }),
         }).done(function (data) {
           alert(data.description)
+          getFeedingTime();
         });
     });
 
     $('#mobileForm').on('submit', function (e) {
         e.preventDefault();
         const mobileNumbers = [];
-        $('#mobileForm [name="mobile_number[]"]').each(function () {
+        $('#mobileForm input[name="mobile_number[]"].is-valid').each(function () {
             mobileNumbers.push($(this).val());
         });
-        console.log("Mobile numbers"); 
+        console.log("Mobile numbers", mobileNumbers); 
+
+        $.ajax({
+          url: "/api/save_mobile_number",
+          method: "POST",
+          timeout: 0,
+          headers: {
+            "Content-Type": "application/json"
+          },
+          data: JSON.stringify({
+            "mobile_numbers": JSON.stringify(mobileNumbers)
+          }),
+        }).done(function (data) {
+          alert(data.description)
+          getMobileNumberList();
+        });
+
     });
     $(document.body).on("click", ".remove-feeding-time", function() {
       let feeding_id = $(this).data("feeding_time_id");
-      // $(this).parent().parent().parent().remove();
+      // 
       $.ajax( {
         url: "/api/remove_feeding_time",
         method: "POST",
@@ -186,6 +218,25 @@
         }),
       }).done(function (data) {
         alert(data.description)
+        getFeedingTime();
+      });
+    })
+    $(document.body).on("click", ".remove-mobile-number", function() {
+      let mobile_number_id = $(this).data("mobile_number_id");
+      // 
+      $.ajax( {
+        url: "/api/remove_mobile_number",
+        method: "POST",
+        timeout: 0,
+        headers: {
+          "Content-Type": "application/json"
+        },
+        data: JSON.stringify({
+          mobile_number_id: mobile_number_id
+        }),
+      }).done(function (data) {
+        alert(data.description)
+        getMobileNumberList();
       });
     })
     const getTemperature = () => {
@@ -235,19 +286,44 @@
                 ),
               )
             );
-            // $('#feedingTimes').append(`
-            //   <div class="feeding-time-div">
-            //     <div class="mb-3 feeding-item">
-            //       <label class="form-label">Feeding Time</label>
-            //       <input type="time" class="form-control" name="feeding_time[]" required value="${x.time}">
-            //     </div>
-            //     <div class="ms-2">
-            //       <button type="button" class="btn btn-sm btn-outline-danger">Remove</button>
-            //     </div>
-            //   </div>
-            // `);
-          })
-          
+          })          
+        }
+      });
+    }
+
+    const getMobileNumberList = () => {
+      $.ajax({
+        "url": "/api/get_mobile_number",
+        "method": "GET",
+        "timeout": 0,
+      }).done(function (data) {
+        console.log(data);
+        if (data.length) {
+          $('#mobileNumbers').empty();
+          data.map(x=>{
+            $('#mobileNumbers').append(
+              $("<div>").addClass("feeding-time-div").append(
+                $("<div>").addClass("mb-3 feeding-item").append(
+                  $("<label>").addClass("form-label").text("Mobile Number"),
+                  $("<input>").attr({
+                    type: 'text',
+                    class: 'form-control mobile-number-input is-valid',
+                    name: 'mobile_number[]',
+                    required: true,
+                    value: x.mobile_number
+                  }),
+                ),
+                $("<div>").addClass("ms-2").append(
+                  $("<button>").attr({
+                    type: "button",
+                    class: "btn btn-sm btn-outline-danger remove-mobile-number"
+                  }).data({
+                    mobile_number_id: x.id
+                  }).text("Remove")
+                ),
+              )
+            );
+          })          
         }
       });
     }
@@ -257,6 +333,7 @@
 
     getTemperature();
     getFeedingTime();
+    getMobileNumberList();
 </script>
 
 </body>

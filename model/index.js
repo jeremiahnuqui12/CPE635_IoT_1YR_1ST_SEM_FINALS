@@ -30,6 +30,9 @@ class iot_web_based {
         const [rows] = await pool.query("SELECT * FROM temperature_settings WHERE status=1 ORDER BY id DESC LIMIT 1");
         return rows;
     }
+    // ================================================
+    // ================================================
+    // ================================================
     async saveFeedingTimes(payload) {
         await pool.query(
             "INSERT INTO pet_feeding_time_settings (time) VALUES ?",
@@ -44,6 +47,25 @@ class iot_web_based {
     }
     async getFeedingTime() {
         const [rows] = await pool.query("SELECT * FROM pet_feeding_time_settings WHERE status=1 ORDER BY id ASC");
+        return rows;
+    }
+    // ================================================
+    // ================================================
+    // ================================================
+    async saveMobileNumber(payload) {
+        await pool.query(
+            "INSERT INTO sms_mobile_number_records (mobile_number) VALUES ?",
+            [payload]
+        );
+    }
+    async removeMobileNumber () {
+        await pool.query("UPDATE sms_mobile_number_records SET status=0 WHERE status=1");
+    }
+    async removeMobileNumberRecord(mobile_number_record_id) {
+        await pool.query("UPDATE sms_mobile_number_records SET status=0 WHERE id=?", [mobile_number_record_id]);
+    }
+    async getMobileNumber() {
+        const [rows] = await pool.query("SELECT * FROM sms_mobile_number_records WHERE status=1 ORDER BY id ASC");
         return rows;
     }
 }

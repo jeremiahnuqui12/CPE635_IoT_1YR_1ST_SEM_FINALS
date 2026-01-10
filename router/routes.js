@@ -11,6 +11,10 @@ router.post("/api/save_feeding_time", indexController.savePetFeedingTime);
 router.get("/api/get_feeding_time", indexController.getFeedingTime);
 router.post("/api/remove_feeding_time", indexController.removeFeedingTime)
 
+router.post("/api/save_mobile_number", indexController.saveMobileNumber);
+router.get("/api/get_mobile_number", indexController.getMobileNumber);
+router.post("/api/remove_mobile_number", indexController.removeMobileNumber)
+
 
 
 // ESP Routes
