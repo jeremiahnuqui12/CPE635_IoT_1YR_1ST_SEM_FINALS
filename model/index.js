@@ -68,6 +68,19 @@ class iot_web_based {
         const [rows] = await pool.query("SELECT * FROM sms_mobile_number_records WHERE status=1 ORDER BY id ASC");
         return rows;
     }
+    // ================================================
+    // ================================================
+    // ================================================
+    async saveFanLogs(fan_id, is_fan_on, is_manual_trigger) {
+        await pool.query(
+            "INSERT INTO fan_logs (fan_id, is_fan_on, is_manual_trigger) VALUES (?, ?, ?)",
+            [fan_id, is_fan_on, is_manual_trigger]
+        );
+    }
+    async getCurrentFanStatus(fan_id) {
+        const [rows] = await pool.query("SELECT * FROM fan_logs WHERE fan_id=? ORDER BY id DESC LIMIT 1", [fan_id]);
+        return rows;
+    }
 }
 
 module.exports = new iot_web_based();

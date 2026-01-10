@@ -1,10 +1,42 @@
-const db = require('./../model/index')
+const db = require('./../model/index');
+const socket = require("./../socket-client");
+const FAN_ID = 1;
 class IoTPetFeeder {
     constructor() {
         
     }
     index(req, res) {
         res.render('index', { title: 'Dashboard' });
+        return;
+    }
+    async manualFanTrigger(req,res) {
+        let fan_status_result = await db.getCurrentFanStatus(FAN_ID);
+        // res.status(200).json(fan_status_result);
+        // return;
+        if (fan_status_result.length) {
+            let fan_status = fan_status_result[0];
+            if (fan_status.is_fan_on == '1') {
+                socket.emit("fan_status", 0);
+                await db.saveFanLogs(FAN_ID, 0, 1);
+            } else {
+                socket.emit("fan_status", 1);
+                await db.saveFanLogs(FAN_ID, 1, 1);
+            }
+        } else {
+            socket.emit("fan_status", 1);
+            await db.saveFanLogs(FAN_ID, 1, 1);
+        }
+
+        // socket.emit("fan_status", 1);
+        
+        res.status(400).json({ 
+            status: "SUCCESS",
+            description: "Manual fan trigger"
+        });
+        return;
+    }
+    manualFeeder(req,res) {
+
         return;
     }
     async saveTemperature(req, res) {
@@ -26,6 +58,23 @@ class IoTPetFeeder {
             }
             if (is_temp_same == false) {
                 await db.saveTemperature(room_id, tempValue)
+            }
+
+            let fan_status_result = await db.getCurrentFanStatus(FAN_ID);
+            let is_manual_trigger = false;
+            let is_open = false;
+            if (fan_status_result.length) {
+                is_manual_trigger = fan_status_result[0].is_manual_trigger == "1";
+                is_open = fan_status_result[0].is_fan_on == "1";
+            }
+            if (tempValue >= 25 && !is_open) {
+                // START FAN
+                socket.emit("fan_status", 1)
+                await db.saveFanLogs(FAN_ID, 1, 0);
+            } else if (tempValue <= 25 && is_open && !(is_manual_trigger && is_open)) {
+                // CLOSES FAN
+                socket.emit("fan_status", 0)
+                await db.saveFanLogs(FAN_ID, 0, 0);
             }
             res.status(200).json({ 
                 status:"SUCCESS", 

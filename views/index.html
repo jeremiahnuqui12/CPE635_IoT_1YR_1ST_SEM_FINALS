@@ -9,6 +9,10 @@
             align-items: center;
           }
         </style>
+        <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+" crossorigin="anonymous"></script>
+
+
+
     </head>
     <body class="bg-light">
 
@@ -93,7 +97,17 @@
 
   </div>
 </div>
+<script>
+  const socket = io();
 
+  socket.emit('message', 'Hello server');
+
+  socket.on('reply', msg => {
+    console.log(msg);
+  });
+
+
+</script>
 <script>
     // Add feeding time input
     $('#addFeedingTime').on('click', function () {
