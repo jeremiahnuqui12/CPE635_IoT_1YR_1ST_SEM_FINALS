@@ -3,6 +3,12 @@
         <link rel="stylesheet" href="/assets/bootstrap-5.2.3-dist/bootstrap-5.2.3-dist/css/bootstrap.min.css">
         <script src="/assets/bootstrap-5.2.3-dist/bootstrap-5.2.3-dist/js/bootstrap.min.js"></script>
         <script src="/assets/jquery/jquery-3.7.1.min.js"></script>
+        <style>
+          .feeding-time-div {
+            display: flex;
+            align-items: center;
+          }
+        </style>
     </head>
     <body class="bg-light">
 
@@ -39,9 +45,14 @@
         <div class="card-body">
           <form id="feedingForm">
             <div id="feedingTimes">
-              <div class="mb-3 feeding-item">
-                <label class="form-label">Feeding Time</label>
-                <input type="time" class="form-control" name="feeding_time[]" required>
+              <div class="feeding-time-div">
+                <div class="mb-3 feeding-item">
+                  <label class="form-label">Feeding Time</label>
+                  <input type="time" class="form-control" name="feeding_time[]" required>
+                </div>
+                <div class="ms-2">
+                  <button type="button" class="btn btn-sm btn-outline-danger">Remove</button>
+                </div>
               </div>
             </div>
 
@@ -87,10 +98,15 @@
     // Add feeding time input
     $('#addFeedingTime').on('click', function () {
         $('#feedingTimes').append(`
-        <div class="mb-3 feeding-item">
-            <label class="form-label">Feeding Time</label>
-            <input type="time" class="form-control" name="feeding_time[]" required>
-        </div>
+          <div class="feeding-time-div">
+            <div class="mb-3 feeding-item">
+              <label class="form-label">Feeding Time</label>
+              <input type="time" class="form-control" name="feeding_time[]" required>
+            </div>
+            <div class="ms-2">
+              <button type="button" class="btn btn-sm btn-outline-danger">Remove</button>
+            </div>
+          </div>
         `);
     });
 
@@ -108,8 +124,6 @@
     $('#tempForm').on('submit', function (e) {
         e.preventDefault();
         let temp_value = $("#tempForm input[name='temperature']").val();
-        // console.log(temp_value);
-        alert('Temperature saved >>>>' + temp_value);
 
       $.ajax({
           url: "/api/save_temperature_settings",
@@ -120,8 +134,8 @@
           data: JSON.stringify({
             "tempValue": temp_value
           }),
-      }).done(function (response) {
-        console.log(response);
+      }).done(function (data) {
+        alert(data.description)
       });
 
     });
@@ -133,7 +147,20 @@
             feedingTimes.push($(this).val());
         });
         console.log("feedingTimes>>>>", feedingTimes);
-        
+
+        $.ajax({
+          url: "/api/save_feeding_time",
+          method: "POST",
+          timeout: 0,
+          headers: {
+            "Content-Type": "application/json"
+          },
+          data: JSON.stringify({
+            feeding_times: JSON.stringify(feedingTimes)
+          }),
+        }).done(function (data) {
+          alert(data.description)
+        });
     });
 
     $('#mobileForm').on('submit', function (e) {
@@ -144,8 +171,24 @@
         });
         console.log("Mobile numbers"); 
     });
-
-    function getTemperature() {
+    $(document.body).on("click", ".remove-feeding-time", function() {
+      let feeding_id = $(this).data("feeding_time_id");
+      // $(this).parent().parent().parent().remove();
+      $.ajax( {
+        url: "/api/remove_feeding_time",
+        method: "POST",
+        timeout: 0,
+        headers: {
+          "Content-Type": "application/json"
+        },
+        data: JSON.stringify({
+          feeding_time_id: feeding_id
+        }),
+      }).done(function (data) {
+        alert(data.description)
+      });
+    })
+    const getTemperature = () => {
       $.ajax({
         "url": "/api/get_temperature_config",
         "method": "GET",
@@ -160,8 +203,60 @@
         }
       });
     }
+    const getFeedingTime = () => {
+      $.ajax({
+        "url": "/api/get_feeding_time",
+        "method": "GET",
+        "timeout": 0,
+      }).done(function (data) {
+        console.log(data);
+        if (data.length) {
+          $('#feedingTimes').empty();
+          data.map(x=>{
+            $('#feedingTimes').append(
+              $("<div>").addClass("feeding-time-div").append(
+                $("<div>").addClass("mb-3 feeding-item").append(
+                  $("<label>").addClass("form-label").text("Feeding Time"),
+                  $("<input>").attr({
+                    type: 'time',
+                    class: 'form-control',
+                    name: 'feeding_time[]',
+                    required: true,
+                    value: x.time
+                  }),
+                ),
+                $("<div>").addClass("ms-2").append(
+                  $("<button>").attr({
+                    type: "button",
+                    class: "btn btn-sm btn-outline-danger remove-feeding-time"
+                  }).data({
+                    feeding_time_id: x.id
+                  }).text("Remove")
+                ),
+              )
+            );
+            // $('#feedingTimes').append(`
+            //   <div class="feeding-time-div">
+            //     <div class="mb-3 feeding-item">
+            //       <label class="form-label">Feeding Time</label>
+            //       <input type="time" class="form-control" name="feeding_time[]" required value="${x.time}">
+            //     </div>
+            //     <div class="ms-2">
+            //       <button type="button" class="btn btn-sm btn-outline-danger">Remove</button>
+            //     </div>
+            //   </div>
+            // `);
+          })
+          
+        }
+      });
+    }
+    const checkIfValidMobileNumber = num => {
+      return /^(09|\+639|639)\d{9}$/.test(num);
+    }
 
     getTemperature();
+    getFeedingTime();
 </script>
 
 </body>

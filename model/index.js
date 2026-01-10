@@ -24,13 +24,26 @@ class iot_web_based {
         );
     }
     async removeTemperatureSettings () {
-        await pool.query(
-            "UPDATE temperature_settings SET status=0 WHERE status=1",
-            []
-        );
+        await pool.query("UPDATE temperature_settings SET status=0 WHERE status=1");
     }
     async getTemperatureConfig() {
         const [rows] = await pool.query("SELECT * FROM temperature_settings WHERE status=1 ORDER BY id DESC LIMIT 1");
+        return rows;
+    }
+    async saveFeedingTimes(payload) {
+        await pool.query(
+            "INSERT INTO pet_feeding_time_settings (time) VALUES ?",
+            [payload]
+        );
+    }
+    async removeFeedingTime () {
+        await pool.query("UPDATE pet_feeding_time_settings SET status=0 WHERE status=1");
+    }
+    async removeFeedingTimeRecord(feeding_time_id) {
+        await pool.query("UPDATE pet_feeding_time_settings SET status=0 WHERE id=?", [feeding_time_id]);
+    }
+    async getFeedingTime() {
+        const [rows] = await pool.query("SELECT * FROM pet_feeding_time_settings WHERE status=1 ORDER BY id ASC");
         return rows;
     }
 }
