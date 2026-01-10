@@ -9,7 +9,10 @@ class IoTPetFeeder {
     async saveTemperature(req, res) {
         const { room_id, tempValue } = req.body;
         if (!room_id || !tempValue) {
-            return res.status(400).json({ error: "Missing sourceDevice or tempValue" });
+            return res.status(400).json({ 
+                status: "ERROR",
+                description: "Temperature is required"
+            });
         }
         try {
             let getCurrentTemperature = await db.getLastRoomTemperature(room_id);
@@ -23,15 +26,41 @@ class IoTPetFeeder {
             if (is_temp_same == false) {
                 await db.saveTemperature(room_id, tempValue)
             }
-            res.status(200).json({ ok: true, message: "Temperature recorded" });
+            res.status(200).json({ 
+                status:"SUCCESS", 
+                message: "Temperature recorded"
+            });
         } catch (err) {
             res.status(500).json({ error: err.message });
         }
     }
-    async getCurrentTemperature(req, res) {
+    async getCurrentRoomTemperature(req, res) {
         let result = await db.getLastRoomTemperature(1);
         res.status(200).json(result);
     }
+    async saveTemperatureSettings(req, res) {
+        const { tempValue } = req.body;
+        if (!tempValue) {
+            return res.status(400).json({ 
+                status: "ERROR",
+                description: "Temperature is required"
+            });
+        }
+        try {
+            await db.removeTemperatureSettings();
+            await db.saveTemperatureSettings(tempValue)
+            res.status(200).json({
+                status: "SUCCESS",
+                message: "Temperature recorded"
+            });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    }
+    async getTemperatureConfig(req, res) {
+        let result = await db.getTemperatureConfig(1);
+        res.status(200).json(result);
+    } 
     saveMobileNumber(req, res) {
 
     }

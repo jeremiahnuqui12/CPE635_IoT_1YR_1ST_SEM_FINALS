@@ -17,6 +17,22 @@ class iot_web_based {
             [room_temperature_record_id]
         );
     }
+    async saveTemperatureSettings(temp_value) {
+        await pool.query(
+            "INSERT INTO temperature_settings (temperature) VALUES (?)",
+            [temp_value]
+        );
+    }
+    async removeTemperatureSettings () {
+        await pool.query(
+            "UPDATE temperature_settings SET status=0 WHERE status=1",
+            []
+        );
+    }
+    async getTemperatureConfig() {
+        const [rows] = await pool.query("SELECT * FROM temperature_settings WHERE status=1 ORDER BY id DESC LIMIT 1");
+        return rows;
+    }
 }
 
 module.exports = new iot_web_based();

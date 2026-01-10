@@ -107,7 +107,23 @@
     // Form submit handlers (optional)
     $('#tempForm').on('submit', function (e) {
         e.preventDefault();
-        alert('Temperature saved');
+        let temp_value = $("#tempForm input[name='temperature']").val();
+        // console.log(temp_value);
+        alert('Temperature saved >>>>' + temp_value);
+
+      $.ajax({
+          url: "/api/save_temperature_settings",
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          data: JSON.stringify({
+            "tempValue": temp_value
+          }),
+      }).done(function (response) {
+        console.log(response);
+      });
+
     });
 
     $('#feedingForm').on('submit', function (e) {
@@ -126,9 +142,26 @@
         $('#mobileForm [name="mobile_number[]"]').each(function () {
             mobileNumbers.push($(this).val());
         });
-        console.log("Mobile numbers");
-        
+        console.log("Mobile numbers"); 
     });
+
+    function getTemperature() {
+      $.ajax({
+        "url": "/api/get_temperature_config",
+        "method": "GET",
+        "timeout": 0,
+      }).done(function (data) {
+        if (!data) {
+          return; 
+        }
+
+        if (data.length) {
+          $("#tempForm input[name='temperature']").val(data[0].temperature);
+        }
+      });
+    }
+
+    getTemperature();
 </script>
 
 </body>
