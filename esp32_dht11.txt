@@ -1,0 +1,78 @@
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <DHT.h>
+
+#define DHTPIN 15
+#define DHTTYPE DHT11
+
+DHT dht(DHTPIN, DHTTYPE);
+
+const char* ssid = "LAPTOP-S2T80046 6397";
+const char* password = "24b26\\6M";
+
+const char* serverName = "http://192.168.137.1:3000/api/temperature";
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+  dht.begin();
+
+  Serial.print("Connecting to WiFi");
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("\nConnected!");
+  Serial.print("ESP32 IP: ");
+  Serial.println(WiFi.localIP());
+}
+
+void loop() {
+  float temperature = dht.readTemperature();
+
+  if (isnan(temperature)) {
+    Serial.println("Failed to read from DHT sensor");
+    delay(5000);
+    return;
+  }
+
+  Serial.print("Temperature: ");
+  Serial.println(temperature);
+
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+
+    http.begin(serverName);
+    http.addHeader("Content-Type", "application/json");
+
+    String payload = "{";
+    payload += "\"device\":\"ESP32_Room1\",";
+    payload += "\"temperature\":";
+    payload += String(temperature, 2);
+    payload += "}";
+
+    Serial.println("Sending JSON:");
+    Serial.println(payload);
+
+    int httpResponseCode = http.POST(payload);
+
+    Serial.print("HTTP Response code: ");
+    Serial.println(httpResponseCode);
+
+    if (httpResponseCode > 0) {
+      String response = http.getString();
+      Serial.print("Server response: ");
+      Serial.println(response);
+    }
+
+    http.end();
+  } else {
+    Serial.println("WiFi disconnected");
+  }
+
+  delay(5000);
+}

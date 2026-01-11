@@ -16,8 +16,13 @@ router.post("/api/save_mobile_number", indexController.saveMobileNumber);
 router.get("/api/get_mobile_number", indexController.getMobileNumber);
 router.post("/api/remove_mobile_number", indexController.removeMobileNumber)
 
-router.get("/api/manual-feeder", indexController.manualFeeder)
-router.get("/api/manual-fan-opening", indexController.manualFanTrigger)
+router.get("/api/manual-feeder", indexController.manualFeeder);
+router.get("/api/manual-fan-opening", indexController.manualFanTrigger);
+
+router.get("/api/sms-notif-logs", indexController.getSMSNotificationLogs)
+router.get("/api/temperature-logs", indexController.getTemperatureLogs)
+router.get("/api/pet-feeder-logs", indexController.getPetFeederLogs)
+router.get("/api/fan-logs", indexController.getFanLogs)
 
 
 

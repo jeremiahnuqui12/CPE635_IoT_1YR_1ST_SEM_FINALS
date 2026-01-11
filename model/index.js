@@ -81,6 +81,38 @@ class iot_web_based {
         const [rows] = await pool.query("SELECT * FROM fan_logs WHERE fan_id=? ORDER BY id DESC LIMIT 1", [fan_id]);
         return rows;
     }
+    // ================================================
+    // ================================================
+    // ================================================
+    async getTemperatureHistory(room_id) {
+        const [rows] = await pool.query("SELECT * FROM room_temperature_records ORDER BY id DESC LIMIT 10");
+        return rows;
+    }
+    async getPetFeederHistory() {
+        const [rows] = await pool.query("SELECT * FROM pet_feeder_logs ORDER BY id DESC LIMIT 1");
+        return rows;
+    }
+    async getSMSNotificationLogs(fan_id) {
+        const [rows] = await pool.query("SELECT * FROM sms_notification_logs ORDER BY id DESC LIMIT 1");
+        return rows;
+    }
+    async getFanLogs() {
+        const [rows] = await pool.query("SELECT * FROM fan_logs ORDER BY id DESC LIMIT 10");
+        return rows;
+    }
+
+    async savePetFeederHistory(status) {
+        await pool.query(
+            "INSERT INTO pet_feeder_logs (status) VALUES (?)",
+            [status]
+        );
+    }
+    async saveSMSNotificationLogs(receiver, message, status) {
+        await pool.query(
+            "INSERT INTO sms_notification_logs (receiver_number, message, status) VALUES (?,?,?)",
+            [receiver_number, message, status]
+        );
+    }
 }
 
 module.exports = new iot_web_based();

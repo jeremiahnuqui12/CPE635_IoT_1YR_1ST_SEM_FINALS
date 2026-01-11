@@ -20,8 +20,122 @@
 
   <h1 class="mb-4 text-center">IoT Based Room Temperature Monitoring System with Automated Fan Opening and Smart Food Dispensing for Pets and SMS Notification.</h1>
 
-  <div class="row g-4">
+  <div class="row g-4 mb-3 border-bottom pb-3">
+    <div class="col-md-3">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">Room Temperature</h5>
+        </div>
+        <div class="card-body">
+          <div class="d-flex justify-content-end">
+            <div class="fs-3 current-temp">-</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">Fan Status</h5>
+        </div>
+        <div class="card-body">
+          <div class="d-flex justify-content-end">
+            <div class="fs-3 current-fan-status">-</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
+  <div class="row g-4 mb-3 border-bottom pb-3">
+    <div class="col-md-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">Temperature history</h5>
+        </div>
+        <div class="card-body">
+          <div>
+            <table class="table table-sm" id="temperature-logs">
+              <thead>
+                <tr>
+                  <th>Temperature</th>
+                  <th>Last time recorded</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">Fan logs</h5>
+        </div>
+        <div class="card-body">
+          <div>
+            <table class="table table-sm"  id="fan-logs">
+              <thead>
+                <tr>
+                  <th>Status</th>
+                  <th>Timestamp</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">Pet feeder logs</h5>
+        </div>
+        <div class="card-body">
+          <div>
+            <table class="table table-sm"  id="pet-feeder-logs">
+              <thead>
+                <tr>
+                  <th>Status</th>
+                  <th>Timestamp</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-12">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">SMS Notification logs</h5>
+        </div>
+        <div class="card-body">
+          <div>
+            <table class="table table-sm" id="sms-notif-logs">
+              <thead>
+                <tr>
+                  <th>Receiver</th>
+                  <th>Message</th>
+                  <th>Status</th>
+                  <th>Timestamp</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="row g-4">
     <!-- Temperature Card -->
     <div class="col-md-4">
       <div class="card shadow-sm">
@@ -43,7 +157,7 @@
     <!-- Pet Feeding Time Card -->
     <div class="col-md-4">
       <div class="card shadow-sm">
-        <div class="card-header bg-success text-white">
+        <div class="card-header bg-primary text-white">
           <h5 class="mb-0">Pet Feeding Times</h5>
         </div>
         <div class="card-body">
@@ -73,7 +187,7 @@
     <!-- Mobile Numbers Card -->
     <div class="col-md-4">
       <div class="card shadow-sm">
-        <div class="card-header bg-warning">
+        <div class="card-header bg-primary text-white">
           <h5 class="mb-0">Mobile Numbers for SMS Notification</h5>
         </div>
         <div class="card-body">
@@ -106,9 +220,9 @@
     console.log(msg);
   });
 
-
 </script>
 <script>
+  let MAX_TEMP = 25; // DEFAULT
     // Add feeding time input
     $('#addFeedingTime').on('click', function () {
         $('#feedingTimes').append(`
@@ -264,6 +378,7 @@
         }
 
         if (data.length) {
+          MAX_TEMP = data[0].temperature
           $("#tempForm input[name='temperature']").val(data[0].temperature);
         }
       });
@@ -341,6 +456,107 @@
         }
       });
     }
+    const generateTemperatureLogs = () => {
+      $.ajax({
+        "url": "/api/temperature-logs",
+        "method": "GET",
+        "timeout": 0,
+      }).done(function (data) {
+        $("#temperature-logs tbody").empty();
+        data.map((x, y)=>{
+          let button_badge = parseFloat(x.temperature) > parseFloat(MAX_TEMP) ? "btn btn-danger btn-sm" : "btn btn-success btn-sm";
+          if (y == 0) {
+            $(".current-temp").empty();
+            $(".current-temp").append(
+              $("<button>").attr({
+                type: "button",
+                class: button_badge,
+              }).text(x.temperature + "°C")
+            )
+          } 
+          $("#temperature-logs tbody").append(
+            $("<tr>").append(
+              $("<td>").append(
+                $("<button>").attr({
+                  type: "button",
+                  class: button_badge,
+                }).text(x.temperature + "°C")
+              ),
+              $("<td>").text(x.last_timestamp_checked ? new Date(x.last_timestamp_checked).toLocaleString() : new Date(x.timestamp).toLocaleString()),
+            )
+          )
+        })
+      });
+    }
+    const generateFanLogs = () => {
+      $.ajax({
+        "url": "/api/fan-logs",
+        "method": "GET",
+        "timeout": 0,
+      }).done(function (data) {
+        $("#fan-logs tbody").empty();
+        data.map((x, y)=>{
+          let fan_status = x.is_fan_on ? "ON" : "OFF";
+          let button_badge = x.is_fan_on ? "btn btn-success btn-sm" : "btn btn-danger btn-sm";
+          if (y == 0) {
+            $(".current-fan-status").empty()
+            $(".current-fan-status").append(
+              $("<button>").attr({
+                  type: "button",
+                  class: button_badge,
+                }).text(fan_status)
+            )
+          } 
+          $("#fan-logs tbody").append(
+            $("<tr>").append(
+              $("<td>").append(
+                $("<button>").attr({
+                  type: "button",
+                  class: button_badge,
+                }).text(fan_status)
+              ),
+              $("<td>").text(new Date(x.timestamp).toLocaleString()),
+            )
+          )
+        })
+      });
+    }
+    const generatePetFeederLogs = () => {
+      $.ajax({
+        "url": "/api/pet-feeder-logs",
+        "method": "GET",
+        "timeout": 0,
+      }).done(function (data) {
+        $("#pet-feeder-logs tbody").empty();
+        data.map(x=>{
+          $("#pet-feeder-logs tbody").append(
+            $("<tr>").append(
+              $("<td>").text(x.status),
+              $("<td>").text(new Date(x.timestamp).toLocaleString()),
+            )
+          )
+        })
+      });
+    }
+    const generateSMSNotificationLogs = () => {
+      $.ajax({
+        "url": "/api/sms-notif-logs",
+        "method": "GET",
+        "timeout": 0,
+      }).done(function (data) {
+        $("#sms-notif-logs tbody").empty();
+        data.map(x=>{
+          $("#sms-notif-logs tbody").append(
+            $("<tr>").append(
+              $("<td>").text(x.receiver_number),
+              $("<td>").text(x.message),
+              $("<td>").text(x.status),
+              $("<td>").text(new Date(x.timestamp).toLocaleString()),
+            )
+          )
+        })
+      });
+    }
     const checkIfValidMobileNumber = num => {
       return /^(09|\+639|639)\d{9}$/.test(num);
     }
@@ -348,6 +564,11 @@
     getTemperature();
     getFeedingTime();
     getMobileNumberList();
+
+    generateTemperatureLogs();
+    generatePetFeederLogs();
+    generateSMSNotificationLogs();
+    generateFanLogs();
 </script>
 
 </body>

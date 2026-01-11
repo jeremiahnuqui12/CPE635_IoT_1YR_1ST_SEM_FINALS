@@ -1,5 +1,6 @@
 // server.js
 const { Server } = require("socket.io");
+// const { Gpio } = require('onoff');
 
 const io = new Server(3001, {
   cors: {
@@ -27,7 +28,7 @@ io.on("connection", socket => {
   });
 
   socket.on("feeder_manual_trigger", () => {
-    
+
   })
 
   socket.on("disconnect", () => {
