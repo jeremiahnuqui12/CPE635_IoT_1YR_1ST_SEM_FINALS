@@ -1,7 +1,8 @@
 // server.js
 const { Server } = require("socket.io");
-// const { Gpio } = require('onoff');
-
+const { Gpio } = require('onoff');
+const FAN_GPIO = new Gpio(588, 'out');
+// const FAN_GPIO = new Gpio(17, 'out');
 const io = new Server(3001, {
   cors: {
     origin: "*", // or specify your frontend URL
@@ -20,10 +21,10 @@ io.on("connection", socket => {
     console.log("fan_status:", status);
     if (status == 1) {
       // START FAN
-
+      FAN_GPIO.writeSync(1);
     } else {
       // CLOSE FAN
-
+      FAN_GPIO.writeSync(0);
     }
   });
 

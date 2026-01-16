@@ -89,11 +89,11 @@ class iot_web_based {
         return rows;
     }
     async getPetFeederHistory() {
-        const [rows] = await pool.query("SELECT * FROM pet_feeder_logs ORDER BY id DESC LIMIT 1");
+        const [rows] = await pool.query("SELECT * FROM pet_feeder_logs ORDER BY id DESC LIMIT 10");
         return rows;
     }
-    async getSMSNotificationLogs(fan_id) {
-        const [rows] = await pool.query("SELECT * FROM sms_notification_logs ORDER BY id DESC LIMIT 1");
+    async getSMSNotificationLogs() {
+        const [rows] = await pool.query("SELECT * FROM sms_notification_logs ORDER BY id DESC LIMIT 10");
         return rows;
     }
     async getFanLogs() {
@@ -101,16 +101,16 @@ class iot_web_based {
         return rows;
     }
 
-    async savePetFeederHistory(status) {
+    async savePetFeederHistory(status, is_manual_trigger) {
         await pool.query(
-            "INSERT INTO pet_feeder_logs (status) VALUES (?)",
-            [status]
+            "INSERT INTO pet_feeder_logs (status, is_manual_trigger) VALUES (?, ?)",
+            [status, is_manual_trigger]
         );
     }
     async saveSMSNotificationLogs(receiver, message, status) {
         await pool.query(
             "INSERT INTO sms_notification_logs (receiver_number, message, status) VALUES (?,?,?)",
-            [receiver_number, message, status]
+            [receiver, message, status]
         );
     }
 }

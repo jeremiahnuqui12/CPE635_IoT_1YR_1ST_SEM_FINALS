@@ -2,6 +2,7 @@ const db = require('./../model/index');
 const socket = require("./../socket-client");
 const FAN_ID = 1;
 const serialportgsm = require('serialport-gsm');
+const { exec } = require('child_process');
 class IoTPetFeeder {
     constructor() {
         
@@ -10,34 +11,114 @@ class IoTPetFeeder {
         res.render('index', { title: 'Dashboard' });
         return;
     }
+    async checkIfFeedingTime() {
+        let result = await db.getFeedingTime();
+        const now = new Date();
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+
+        const time_now = `${hours}:${minutes}`;
+        console.log(time_now); // "14:32"
+        result.map(x=>{
+            const [hh, mm] = x.time.split(':');
+            x.time = `${hh}:${mm}`;
+            return x;
+        });
+        let checkIfTimeMatches = result.filter(x=>x.time == time_now);
+
+        if (checkIfTimeMatches.length) {
+            const is_manual_trigger = 0;
+            // db.savePetFeederHistory("SUCCESS", is_manual_trigger);
+            try {
+                // exec('python3 open_pet_feeder.py', (error, stdout, stderr) => {
+                // if (error) {
+                //     console.log(error);
+                //     db.savePetFeederHistory("ERROR", is_manual_trigger);
+                //     // res.status(200).json({ 
+                //     //     status: "ERROR",
+                //     //     description: "ERROR"
+                //     // });
+                //     return;
+                // }
+                db.savePetFeederHistory("SUCCESS", is_manual_trigger);
+                sendSMSMessage(`Pet feeder has been automatically opened`);
+                // res.status(200).json({ 
+                //         status: "SUCCESS",
+                //         description: "Pet feeder has been manually opened"
+                //     });
+                // });   
+            } catch (error) {
+                console.log("TRY CATCH ERROR>>>>", error);
+                // res.status(200).json({ 
+                //     status: "ERROR",
+                //     description: "ERROR"
+                // });
+                
+            }
+            return;
+        }        
+        // res.status(200).json(result);
+        return;
+    }
     async manualFanTrigger(req,res) {
         let fan_status_result = await db.getCurrentFanStatus(FAN_ID);
         // res.status(200).json(fan_status_result);
         // return;
+        let new_fan_status = "";
         if (fan_status_result.length) {
             let fan_status = fan_status_result[0];
             if (fan_status.is_fan_on == '1') {
                 socket.emit("fan_status", 0);
-                await db.saveFanLogs(FAN_ID, 0, 1);
+                db.saveFanLogs(FAN_ID, 0, 1);
+                new_fan_status = "CLOSED";
             } else {
                 socket.emit("fan_status", 1);
-                await db.saveFanLogs(FAN_ID, 1, 1);
+                db.saveFanLogs(FAN_ID, 1, 1);
+                new_fan_status = "OPENED";
             }
         } else {
             socket.emit("fan_status", 1);
-            await db.saveFanLogs(FAN_ID, 1, 1);
+            db.saveFanLogs(FAN_ID, 1, 1);
+            new_fan_status = "OPENED";
         }
 
         // socket.emit("fan_status", 1);
-        
-        res.status(400).json({ 
+        sendSMSMessage(`Fan is ${new_fan_status}`);
+        res.status(200).json({ 
             status: "SUCCESS",
-            description: "Manual fan trigger"
+            description: `Fan is ${new_fan_status}`
         });
         return;
     }
-    manualFeeder(req,res) {
-
+    async manualFeeder(req,res) {
+        const is_manual_trigger = 1;
+        // db.savePetFeederHistory("SUCCESS", is_manual_trigger);
+        try {
+            exec('python3 open_pet_feeder.py', (error, stdout, stderr) => {
+            if (error) {
+                console.log(error);
+                db.savePetFeederHistory("ERROR", is_manual_trigger);
+                res.status(200).json({ 
+                    status: "ERROR",
+                    description: "ERROR"
+                });
+                return;
+            }
+            db.savePetFeederHistory("SUCCESS", is_manual_trigger);
+            sendSMSMessage(`Pet feeder has been manually opened`);
+            res.status(200).json({ 
+                    status: "SUCCESS",
+                    description: "Pet feeder has been manually opened"
+                });
+            });   
+        } catch (error) {
+            console.log("TRY CATCH ERROR>>>>", error);
+            res.status(200).json({ 
+                status: "ERROR",
+                description: "ERROR"
+            });
+            
+        }
         return;
     }
     async saveTemperature(req, res) {
@@ -72,13 +153,15 @@ class IoTPetFeeder {
                 is_manual_trigger = fan_status_result[0].is_manual_trigger == "1";
                 is_open = fan_status_result[0].is_fan_on == "1";
             }
-            if (tempValue >= MAX_TEMP && !is_open) {
+            if (parseFloat(tempValue) >= parseFloat(MAX_TEMP) && !is_open) {
                 // START FAN
                 socket.emit("fan_status", 1)
+                sendSMSMessage("Fan is on");
                 await db.saveFanLogs(FAN_ID, 1, 0);
-            } else if (tempValue <= 25 && is_open && !(is_manual_trigger && is_open)) {
+            } else if (parseFloat(tempValue) <= parseFloat(MAX_TEMP) && is_open && !(is_manual_trigger && is_open)) {
                 // CLOSES FAN
                 socket.emit("fan_status", 0)
+                sendSMSMessage("Fan is closed");
                 await db.saveFanLogs(FAN_ID, 0, 0);
             }
 
@@ -289,47 +372,55 @@ class IoTPetFeeder {
     async savePetFeederLogs() {
         db.savePetFeederHistory("SUCCESS")
     }
+    // async saveSMSNotificationLogs() {
 
-    async sendSMSMessage(sms_message) {
-        const GSM_SERIALPORT = "/dev/ttyUSB0";
-        let modem = serialportgsm.Modem()
-
-        let options = {
-            baudRate: 115200,
-            dataBits: 8,
-            stopBits: 1,
-            parity: 'none',
-            rtscts: false,
-            xon: false,
-            xoff: false,
-            xany: false,
-            autoDeleteOnReceive: true,
-            enableConcatenation: true,
-            incomingCallIndication: true,
-            incomingSMSIndication: true,
-            pin: '',
-            customInitCommand: '',
-            cnmiCommand: 'AT+CNMI=2,1,0,2,1',
-            logger: console
-        }
-        let mobile_number_list = await db.getMobileNumber();
-        modem.open('', options, (x)=>{
-            console.log("OPEN>>>", x);
-
-            mobile_number_list.map(m_number_list => {
-                modem.sendSMS(m_number_list.mobile_number, sms_message, false, (send_sms_res)=>{
-                    console.log("sendSMS>>>>", send_sms_res);
-                    if (send_sms_res.data.response == "Message Successfully Sent") {
-                        saveSMSNotificationLogs(m_number_list.mobile_number, sms_message, "SUCCESS");
-                        modem.close()      
-                    } else {
-                        saveSMSNotificationLogs(m_number_list.mobile_number, sms_message, "FAILED");
-                    }
-                    
-                })
-            })
-        })
-    }
+    // }
+    
 }
 
+const sendSMSMessage = async (sms_message) => {
+    console.log(sms_message);
+        
+    const GSM_SERIALPORT = "/dev/ttyUSB0";
+    let modem = serialportgsm.Modem()
+
+    let options = {
+        baudRate: 115200,
+        dataBits: 8,
+        stopBits: 1,
+        parity: 'none',
+        rtscts: false,
+        xon: false,
+        xoff: false,
+        xany: false,
+        autoDeleteOnReceive: true,
+        enableConcatenation: true,
+        incomingCallIndication: true,
+        incomingSMSIndication: true,
+        pin: '',
+        customInitCommand: '',
+        cnmiCommand: 'AT+CNMI=2,1,0,2,1',
+        logger: console
+    }
+    let mobile_number_list = await db.getMobileNumber();
+    modem.open(GSM_SERIALPORT, options, (x)=>{
+        mobile_number_list.map((m_number_list, y) => {
+            // ============================================
+            modem.sendSMS(m_number_list.mobile_number, sms_message, false, (send_sms_res)=>{
+                console.log(m_number_list.mobile_number, ">>>>sendSMS>>>>", send_sms_res);
+                if (send_sms_res.data.response == "Message Successfully Sent") {
+                    db.saveSMSNotificationLogs(m_number_list.mobile_number, sms_message, "SUCCESS");
+                } else {
+                    db.saveSMSNotificationLogs(m_number_list.mobile_number, sms_message, "FAILED");
+                } 
+            });
+            // ========================================
+            if (y == mobile_number_list.length-1) {
+                setTimeout(() => {
+                    modem.close()      
+                }, 3000);
+            }
+        })
+    })
+}
 module.exports = new IoTPetFeeder()

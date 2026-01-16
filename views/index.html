@@ -9,10 +9,6 @@
             align-items: center;
           }
         </style>
-        <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+" crossorigin="anonymous"></script>
-
-
-
     </head>
     <body class="bg-light">
 
@@ -41,6 +37,20 @@
         <div class="card-body">
           <div class="d-flex justify-content-end">
             <div class="fs-3 current-fan-status">-</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">Pet feeder</h5>
+        </div>
+        <div class="card-body">
+          <div class="d-flex justify-content-end">
+            <div class="fs-3 open-pet-feeder">
+              <button type="button" class="btn btn-secondary btn-sm">Open pet feeder</button>
+            </div>
           </div>
         </div>
       </div>
@@ -80,6 +90,7 @@
               <thead>
                 <tr>
                   <th>Status</th>
+                  <th>Trigger</th>
                   <th>Timestamp</th>
                 </tr>
               </thead>
@@ -158,7 +169,7 @@
     <div class="col-md-4">
       <div class="card shadow-sm">
         <div class="card-header bg-primary text-white">
-          <h5 class="mb-0">Pet Feeding Times</h5>
+          <h5 class="mb-0">Pet Feeding Scheule list</h5>
         </div>
         <div class="card-body">
           <form id="feedingForm">
@@ -174,11 +185,11 @@
               </div>
             </div>
 
-            <button type="button" class="btn btn-outline-success w-100 mb-2" id="addFeedingTime">
+            <button type="button" class="btn btn-outline-primary w-100 mb-2" id="addFeedingTime">
               + Add Another Time
             </button>
 
-            <button type="submit" class="btn btn-success w-100">Save Feeding Times</button>
+            <button type="submit" class="btn btn-primary w-100">Save Feeding Times</button>
           </form>
         </div>
       </div>
@@ -199,11 +210,11 @@
               </div>
             </div>
 
-            <button type="button" class="btn btn-outline-warning w-100 mb-2" id="addMobileNumber">
+            <button type="button" class="btn btn-outline-primary w-100 mb-2" id="addMobileNumber">
               + Add Another Number
             </button>
 
-            <button type="submit" class="btn btn-warning w-100">Save Numbers</button>
+            <button type="submit" class="btn btn-primary w-100">Save Numbers</button>
           </form>
         </div>
       </div>
@@ -211,16 +222,7 @@
 
   </div>
 </div>
-<script>
-  const socket = io();
 
-  socket.emit('message', 'Hello server');
-
-  socket.on('reply', msg => {
-    console.log(msg);
-  });
-
-</script>
 <script>
   let MAX_TEMP = 25; // DEFAULT
     // Add feeding time input
@@ -366,6 +368,32 @@
         alert(data.description)
         getMobileNumberList();
       });
+    });
+    $(document.body).on("click", ".open-pet-feeder button", function() {
+      $.ajax({
+        "url": "/api/manual-feeder",
+        "method": "GET",
+        "timeout": 0,
+      }).done(function (data) {
+        if (!data) {
+          return; 
+        }
+        alert(data.description)
+        generatePetFeederLogs();
+      });
+    })
+    $(document.body).on("click", ".current-fan-status button", function() {
+      $.ajax({
+        "url": "/api/manual-fan-opening",
+        "method": "GET",
+        "timeout": 0,
+      }).done(function (data) {
+        if (!data) {
+          return; 
+        }
+        alert(data.description)
+        generateFanLogs();
+      });
     })
     const getTemperature = () => {
       $.ajax({
@@ -498,6 +526,7 @@
         data.map((x, y)=>{
           let fan_status = x.is_fan_on ? "ON" : "OFF";
           let button_badge = x.is_fan_on ? "btn btn-success btn-sm" : "btn btn-danger btn-sm";
+          let is_manual_trigger =  x.is_manual_trigger ? "MANUAL" : "AUTOMATIC";;
           if (y == 0) {
             $(".current-fan-status").empty()
             $(".current-fan-status").append(
@@ -515,7 +544,9 @@
                   class: button_badge,
                 }).text(fan_status)
               ),
+              $("<td>").text(is_manual_trigger),
               $("<td>").text(new Date(x.timestamp).toLocaleString()),
+              
             )
           )
         })
@@ -529,9 +560,12 @@
       }).done(function (data) {
         $("#pet-feeder-logs tbody").empty();
         data.map(x=>{
+          let status_badge = x.status == "SUCCESS" ? "badge bg-success" : "badge bg-danger";
           $("#pet-feeder-logs tbody").append(
             $("<tr>").append(
-              $("<td>").text(x.status),
+              $("<td>").append(
+                $("<span>").addClass(status_badge).text(x.status)
+              ),
               $("<td>").text(new Date(x.timestamp).toLocaleString()),
             )
           )
@@ -546,11 +580,14 @@
       }).done(function (data) {
         $("#sms-notif-logs tbody").empty();
         data.map(x=>{
+          let status_badge = x.status == "SUCCESS" ? "badge bg-success" : "badge bg-danger";
           $("#sms-notif-logs tbody").append(
             $("<tr>").append(
               $("<td>").text(x.receiver_number),
               $("<td>").text(x.message),
-              $("<td>").text(x.status),
+              $("<td>").append(
+                $("<span>").addClass(status_badge).text(x.status)
+              ),
               $("<td>").text(new Date(x.timestamp).toLocaleString()),
             )
           )

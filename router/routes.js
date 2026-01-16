@@ -25,6 +25,8 @@ router.get("/api/pet-feeder-logs", indexController.getPetFeederLogs)
 router.get("/api/fan-logs", indexController.getFanLogs)
 
 
+router.get("/api/check-feeding-time", indexController.checkIfFeedingTime)
+
 
 // ESP Routes
 router.post('/api/save_temperature', indexController.saveTemperature);
